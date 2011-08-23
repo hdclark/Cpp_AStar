@@ -1,28 +1,44 @@
 
-Make the compilation script executeable and then run it. Nothing is installed, it just 
-spits out an executeable.
-
-Alternatively, view the compilation script and run by-hand.
-
+----------------------------------------------------------------------------------------
+INSTALLATION:
 ----------------------------------------------------------------------------------------
 
-The source for astartest.cc is a how-to for using the library. There are two lines:
+Make the compilation script executeable and then run it. Nothing is installed, it just 
+ spits out an executeable. Alternatively, view the compilation script and run by-hand.
 
+----------------------------------------------------------------------------------------
+DESCRIPTIONS:
+----------------------------------------------------------------------------------------
+This program is a C++ implementation of the A* algorithm. It is probably not very fast, 
+ but it is templated and easy to use. 
+
+The source for astartest.cc is a simple how-to for using the library. There are two lines:
         #include "Utilities.h"
-
-and
-
+ and
         final_path = AStar(....);
 
-which are responsible for calling the routine. The rest is setting up the initial/final
-points and printing the path to screen.
+ which are responsible for calling the routine. The rest is setting up the initial/final
+ points and printing the path to screen. An even simpler version spits out the path in
+ 3d (astartest_3D.cc). 
 
 
+The remaining astartest*  files give examples of how to pass in custom functions. Check
+ Utilities.h for definitions, or to see how to define your own custom functions.
 
-NOTE: You will need to have a unicode-happy terminal to see anything. Works on rxvt-unicode
-(urxvt) and gnome-terminal. If this is inconvenient, just change the unicode marks in the
-source of astartest.cc.
 
-NOTE: I welcome patches, ideas, bug reporting, and criticism. 
- Send all to   h d c l a r k   A T   u a l b e r t a   D O T   c a
+----------------------------------------------------------------------------------------
+NOTES:
+----------------------------------------------------------------------------------------
+
+The files Utilities.cc and Utilities.h are covered under the LGPLv3.0 (see the 
+ LICENSE file.) The astartest* files and the compilation script are covered under the 
+ GPLv3.0. This and other documentation (as distributed by the author) is covered under
+ the FDLv3.0.
+
+You will need to have a unicode-happy terminal to see anything. Works on rxvt-unicode
+ (urxvt) and gnome-terminal. If this is inconvenient, just change the unicode marks in the
+ source of astartest.cc.
+
+I welcome patches, ideas, bug reporting, and criticism. 
+ Send all to   h d c l a r k   /A T/   u a l b e r t a   /D O T/   c a
 

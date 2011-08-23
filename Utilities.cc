@@ -1,18 +1,6 @@
-//LICENSE:  LGPLv3.  (NOT GPLv3!)
-//
-// Code written by haley clark in 2011. Based on Pseudo code implementation on Wikipedia article for A*.
-//
-// This is an implementation of the A* algorithm. It is templated to accept passing in your own Heuristic function
-// and defining the data type which 'distance' (and thus also the heuristic function) is measured in.
-//
-// Lambda functions are used as a default:
-//    - neighbour grabbing function,
-//    - heuristic function,
-//    - distance function.
-//
-//   The plan is to let one pass in their own data types and function definitions, but this will happen down the road.
-//
-
+//Utility functions, in a similar vein as the things in "Misc.cc" and "Misc.h", but in a more
+// involved scope. These functions are implementations of handy (hopefully generic) routines 
+// which might be useful to have lying around sometime.
 #include <vector>
 #include <map>
 #include <functional>
@@ -20,21 +8,28 @@
 
 #include "Utilities.h"
 
-#include <iostream> //!!!!!!!!!!! remove me !!!!!!!!!!!!
+#include <cmath>      //Used if taxicab distance is used (fabs.)
+#include <iostream>
 
-template<typename H_FUNC_VAL, typename FUNC>  //Function which takes std::vector<int> as an argument and returns a double or something.
-std::vector< std::vector<int> >  _AStar_FULL( std::vector<int>  A,  std::vector<int>  B,  FUNC Heuristic = NULL ){
+//H_FUNC   ---> A* Heuristic function. Takes two std::vector<int>'s and returns H_FUNC_TYPE (like, a double, or something.)
+//D_FUNC   ---> A* Distance function.  Takes two std::vector<int>'s and returns H_FUNC_TYPE (like, a double, or something.)
+//N_FUNC   ---> A* Neighbour function. Takes one std::vector<int>, a vector of std::vector<int>'s, and returns void. Fills the latter with neighbouring nodes.
+//
+
+template<typename H_FUNC_TYPE, typename H_FUNC, typename D_FUNC, typename N_FUNC > 
+std::vector< std::vector<int> >  _AStar_FULL( std::vector<int>  A,  std::vector<int>  B, \
+                                                      H_FUNC Heuristic_F = nullptr,      \
+                                                      D_FUNC Distance_F  = nullptr,      \
+                                                      N_FUNC Neighbour_F = nullptr  ){
     //A is the starting point and B is the end point.
 
     std::vector< std::vector<int> > result;
 
     //Avoid doing anything if there is no need to.
-    if(A == B){ 
+    if((A == B) || (A.size() != B.size())){ 
         result.push_back(A);
         result.push_back(B);
     }
-
-int DIM = 2;
 
     std::vector< std::vector<int> > closedset;  //A collection of previously-visited nodes.
     std::vector< std::vector<int> > openset;    //The set of all nodes to be evaluated. Initially holds the starting point.
@@ -42,26 +37,26 @@ int DIM = 2;
     std::map< std::vector<int>, std::vector<int> > came_from;  //A collection of navigated nodes. Keeps track of where each node branched from.
 
     //Score storage.
-    std::map< std::vector<int>, H_FUNC_VAL > g_score;  //The path *cost* from starting point to current point.
-    //g_score[A] = static_cast<H_FUNC_VAL>( 0 );
-    std::map< std::vector<int>, H_FUNC_VAL > h_score;  //The heuristic cost from a point to the goal point.
-    //h_score[A] = static_cast<H_FUNC_VAL>( HeuristicFunc(A,B) );
-    std::map< std::vector<int>, H_FUNC_VAL > f_score;  //g + h  --> This is the metric we want to minimize.
+    std::map< std::vector<int>, H_FUNC_TYPE > g_score;  //The path *cost* from starting point to current point.
+    //g_score[A] = static_cast<H_FUNC_TYPE>( 0 );
+    std::map< std::vector<int>, H_FUNC_TYPE > h_score;  //The heuristic cost from a point to the goal point.
+    //h_score[A] = static_cast<H_FUNC_TYPE>( HeuristicFunc(A,B) );
+    std::map< std::vector<int>, H_FUNC_TYPE > f_score;  //g + h  --> This is the metric we want to minimize.
     //f_score[A] = h_score[A] + g_score[A];
 
     //------------------------------------------------------------------------------------
     //---------------------------- Lambdas for use locally. ------------------------------
     //------------------------------------------------------------------------------------
-    auto sorter = [&f_score](const std::vector<int> & a, const std::vector<int> & b ){
+    auto _sorter = [&f_score](const std::vector<int> & a, const std::vector<int> & b ){
                       //Sort the lowest to the top (so we can pop it off cheaply.)
                       return f_score[a] > f_score[b];
     };
 
-    std::function< void (const std::vector<int> &) > reconstruct_path;
-    reconstruct_path = [&came_from, &result, &reconstruct_path](const std::vector<int> & node)->void {
+    std::function< void (const std::vector<int> &) > _reconstruct_path;
+    _reconstruct_path = [&came_from, &result, &_reconstruct_path](const std::vector<int> & node)->void {
                       //Check to see if the previous node exists.
                       if( came_from.find(node) != came_from.end() ){
-                          reconstruct_path( came_from[node] );
+                          _reconstruct_path( came_from[node] );
                           result.push_back( came_from[node] );
                           return;
                       }else{
@@ -72,24 +67,29 @@ int DIM = 2;
     //------------------------------------------------------------------------------------
     //-------Lambdas which can be overridden by sending in suitable replacements.---------
     //------------------------------------------------------------------------------------
-    std::function< H_FUNC_VAL (const std::vector<int> & , const std::vector<int> & ) > dist_between;
-    dist_between = [DIM](const std::vector<int> & a, const std::vector<int> & b)->H_FUNC_VAL {
-                      H_FUNC_VAL res = static_cast<H_FUNC_VAL>(0);
+    std::function< H_FUNC_TYPE (const std::vector<int> & , const std::vector<int> & ) >   _Distance;
+    _Distance = [](const std::vector<int> & a, const std::vector<int> & b)->H_FUNC_TYPE {
+                      H_FUNC_TYPE res = static_cast<H_FUNC_TYPE>(0);
                    
                       //Polar distance.
-                      for(unsigned int i=0; i<DIM; ++i) res += static_cast<H_FUNC_VAL>((b[i] - a[i])*(b[i] - a[i]));
+                      for(unsigned int i=0; i<a.size(); ++i) res += static_cast<H_FUNC_TYPE>((b[i] - a[i])*(b[i] - a[i]));
                       res = sqrt(res);
-                      return static_cast<H_FUNC_VAL>(res);
+                      return static_cast<H_FUNC_TYPE>(res);
 
                      /*
                       //Taxicab distance.
-                      for(unsigned int i=0; i<DIM; ++i) res += static_cast<H_FUNC_VAL>(fabs(b[i] - a[i]));
-                      return static_cast<H_FUNC_VAL>(res)
+                      for(unsigned int i=0; i<a.size(); ++i) res += static_cast<H_FUNC_TYPE>(fabs(b[i] - a[i]));
+                      return static_cast<H_FUNC_TYPE>(res);
                      */
     };
 
-    std::function< void (std::vector<int> & , std::vector< std::vector<int> > & ) > nearest_neighbours;
-    nearest_neighbours = [DIM](std::vector<int> & p, std::vector< std::vector<int> > & nhbrs)->void {
+    if(Distance_F != nullptr){
+        _Distance = Distance_F;
+    }
+        
+
+    std::function< void (const std::vector<int> & , std::vector< std::vector<int> > & ) >  _Neighbour;
+    _Neighbour = [](const std::vector<int> & p, std::vector< std::vector<int> > & nhbrs)->void {
                       //This lambda returns nothing, but sends back a vector of neighbour nodes (nhbrs.)
                       //
                       // NOTE: that this lambda assumes that neighbouring points are +- 1 the coordinates
@@ -98,13 +98,13 @@ int DIM = 2;
                       // NOTE: this function makes no attempt to determine if the neighbours exist or are
                       // disallowed. Send in your own function to do that!
                      
-                      if(p.size() != DIM) return;
+                   //   if(p.size() != p.size()) return;
                       std::vector<int> up,dn;
 /*
                       //Non-diagonals only. (Any dimension.)
-                      for(unsigned int i=0; i<DIM; ++i){
+                      for(unsigned int i=0; i<p.size(); ++i){
                           up.clear(); dn.clear();
-                          for(unsigned int j=0; j<DIM; ++j){
+                          for(unsigned int j=0; j<p.size(); ++j){
                               if(i==j){
                                   up.push_back( p[j] +  static_cast<int>(1));
                                   dn.push_back( p[j] -  static_cast<int>(1));
@@ -119,7 +119,7 @@ int DIM = 2;
 
                       //Non-diagonals and diagonals. (Any dimension.)
                       unsigned int index, max = 1;   //(max = 3^dimension. Saves including cmath header..)
-                      for(unsigned int j=0; j<DIM; ++j){ max *= 3; }
+                      for(unsigned int j=0; j<p.size(); ++j){ max *= 3; }
                       for(unsigned int i=0; i<max; ++i){
                           up.clear();
                           index = 0;
@@ -133,13 +133,17 @@ int DIM = 2;
                       return;
     };
 
-    std::function< H_FUNC_VAL(const std::vector<int> &, const std::vector<int> &) > HeuristicFunc;
-    HeuristicFunc = [&dist_between](const std::vector<int> & somepoint, const std::vector<int> & endpoint)->H_FUNC_VAL {
-        return static_cast<H_FUNC_VAL>( dist_between(somepoint, endpoint) );
+    if(Neighbour_F != nullptr){
+        _Neighbour = Neighbour_F;
+    }
+
+    std::function< H_FUNC_TYPE (const std::vector<int> &, const std::vector<int> &) >  _Heuristic;
+    _Heuristic = [&_Distance](const std::vector<int> & somepoint, const std::vector<int> & endpoint)->H_FUNC_TYPE {
+        return static_cast<H_FUNC_TYPE>( _Distance(somepoint, endpoint) );
     };
 
-    if(Heuristic != NULL){
-        HeuristicFunc = Heuristic;
+    if(Heuristic_F != nullptr){
+        _Heuristic = Heuristic_F;
     }
 
     //------------------------------------------------------------------------------------
@@ -147,8 +151,8 @@ int DIM = 2;
     //------------------------------------------------------------------------------------
     openset.push_back(A);
 
-    g_score[A] = static_cast<H_FUNC_VAL>( 0 );
-    h_score[A] = static_cast<H_FUNC_VAL>( HeuristicFunc(A,B) );
+    g_score[A] = static_cast<H_FUNC_TYPE>( 0 );
+    h_score[A] = static_cast<H_FUNC_TYPE>( _Heuristic(A,B) );
     f_score[A] = h_score[A] + g_score[A];
 
     //------------------------------------------------------------------------------------
@@ -160,8 +164,7 @@ int DIM = 2;
     std::vector< std::vector<int> >::iterator vvit;
 
     bool tentatv_is_better;
-    H_FUNC_VAL tentatv_g_score;
-
+    H_FUNC_TYPE tentatv_g_score;
 
 
 
@@ -176,12 +179,12 @@ int DIM = 2;
         // sort, so now we just use nth_element to grab the lowest f_score'd value.
         //
         //After sort, lowest f_Score'd node is in openset.last().
-//        std::sort( openset.begin(), openset.end(), sorter );
-        std::nth_element( openset.begin(), openset.end()-1, openset.end(), sorter );
+//        std::sort( openset.begin(), openset.end(), _sorter );
+        std::nth_element( openset.begin(), openset.end()-1, openset.end(), _sorter );
 
         //If the best node is the target node, we reconstruct the final path and exit.
         if(openset[ openset.size()-1] == B){
-            reconstruct_path(came_from[B]);
+            _reconstruct_path(came_from[B]);
 
             result.push_back(came_from[B]);
             result.push_back( B );
@@ -198,7 +201,7 @@ int DIM = 2;
         //Create the list of neighbours.
         neighbours.clear();
         //neighbours =  <DECIDE IF YOU WANT THIS FUNCTIONALITY OR NOT>
-        nearest_neighbours( current , neighbours);
+        _Neighbour( current , neighbours);
 
         //Cycle through all neighbour nodes to potentially add to the openset. 
         for(vvit = neighbours.begin(); vvit != neighbours.end(); ++vvit){
@@ -210,7 +213,7 @@ int DIM = 2;
 
             //Update the move-by-move distance. Since it is the total distance travelled, 
             // we can just sum piece-by-piece.
-            tentatv_g_score = g_score[current] + dist_between(current, (*vvit)); 
+            tentatv_g_score = g_score[current] + _Distance(current, (*vvit)); 
      
             //If this neighbour node is not in openset, add it.
             if( find(openset.begin(), openset.end(), (*vvit)) == openset.end()){
@@ -231,7 +234,7 @@ int DIM = 2;
             if(tentatv_is_better == true){
                 came_from[*vvit] = current;
                 g_score[*vvit]   = tentatv_g_score;
-                h_score[*vvit]   = HeuristicFunc(*vvit, B);
+                h_score[*vvit]   = _Heuristic(*vvit, B);
                 f_score[*vvit]   = g_score[*vvit] + h_score[*vvit];
             }
 
@@ -260,9 +263,28 @@ int DIM = 2;
 //   Data (point) type- -->   vector of ints.
 //   Return type---------->   vector of vectors of ints. 
 //   Heuristic function--->   double (vector of ints, vector of ints) 
-//   
+//   Distance function---->   (same as Heuristic function...)
+//   Neighbour function--->   void (vector of ints, vector of vectors of ints).
+
+/*
 typedef double(*_Utilities_Globe_etc__Heuristic_Func_Type_A)(std::vector<int>, std::vector<int>);
 template std::vector< std::vector<int> > 
 _AStar_FULL<double,_Utilities_Globe_etc__Heuristic_Func_Type_A>(std::vector<int>,  std::vector<int>, _Utilities_Globe_etc__Heuristic_Func_Type_A);
+*/
+
+
+
+typedef double(*_Utilities_Globe_etc__Heuristic_Func_Type_A)(const std::vector<int> &, const std::vector<int> &);
+typedef  double(*_Utilities_Globe_etc__Distance_Func_Type_A)(const std::vector<int> &, const std::vector<int> &);
+typedef   void(*_Utilities_Globe_etc__Neighbour_Func_Type_A)(const std::vector<int> &, std::vector< std::vector<int> > &);
+
+template std::vector< std::vector<int> >  _AStar_FULL<double,   _Utilities_Globe_etc__Heuristic_Func_Type_A,
+                                                                _Utilities_Globe_etc__Distance_Func_Type_A,
+                                                                _Utilities_Globe_etc__Neighbour_Func_Type_A  
+                                                     >( std::vector<int>  A,  std::vector<int>  B, 
+                                                                _Utilities_Globe_etc__Heuristic_Func_Type_A,
+                                                                _Utilities_Globe_etc__Distance_Func_Type_A,
+                                                                _Utilities_Globe_etc__Neighbour_Func_Type_A   );
+
 
 
