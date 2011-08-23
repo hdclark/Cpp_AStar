@@ -1,0 +1,28 @@
+
+Make the compilation script executeable and then run it. Nothing is installed, it just 
+spits out an executeable.
+
+Alternatively, view the compilation script and run by-hand.
+
+----------------------------------------------------------------------------------------
+
+The source for astartest.cc is a how-to for using the library. There are two lines:
+
+        #include "Utilities.h"
+
+and
+
+        final_path = AStar(....);
+
+which are responsible for calling the routine. The rest is setting up the initial/final
+points and printing the path to screen.
+
+
+
+NOTE: You will need to have a unicode-happy terminal to see anything. Works on rxvt-unicode
+(urxvt) and gnome-terminal. If this is inconvenient, just change the unicode marks in the
+source of astartest.cc.
+
+NOTE: I welcome patches, ideas, bug reporting, and criticism. 
+ Send all to   h d c l a r k   A T   u a l b e r t a   D O T   c a
+
