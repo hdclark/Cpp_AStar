@@ -9,8 +9,10 @@ Make the compilation script executeable and then run it. Nothing is installed, i
 ----------------------------------------------------------------------------------------
 DESCRIPTIONS:
 ----------------------------------------------------------------------------------------
+
 This program is a C++ implementation of the A* algorithm. It is probably not very fast, 
- but it is templated and easy to use. 
+ but it is templated and easy to use. See the website at 
+ [http://www.halclark.ca/Clebsh-Gordon_Coeffs.html] for additional info.
 
 The source for astartest.cc is a simple how-to for using the library. There are two lines:
         #include "Utilities.h"
