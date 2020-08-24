@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 
 g++  $@  -std=c++11 -pedantic -Wall -Wextra Utilities.cc astartest_2d_4.cc -o AStarTest_2D_4
